@@ -6,9 +6,10 @@ import CategorySettings from './CategorySettings';
 import RecurringTransactions from './RecurringTransactions';
 import ReportsExport from './ReportsExport';
 import ThemeSettings from './ThemeSettings';
+import UserProfile from './UserProfile';
 import { Badge } from '@/components/ui/badge';
 import { useTransactions } from '@/context/TransactionContext';
-import { Bell, Wallet, Tag, Repeat, FileText, Paintbrush } from 'lucide-react';
+import { Bell, Wallet, Tag, Repeat, FileText, Paintbrush, User } from 'lucide-react';
 
 const SettingsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('budgets');
@@ -33,7 +34,12 @@ const SettingsPage: React.FC = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid grid-cols-3 md:grid-cols-6 mb-8">
+        <TabsList className="grid grid-cols-3 md:grid-cols-7 mb-8">
+          <TabsTrigger value="profile" className="flex items-center gap-2">
+            <User className="h-4 w-4" />
+            <span className="hidden md:inline">Profile</span>
+          </TabsTrigger>
+          
           <TabsTrigger value="budgets" className="flex items-center gap-2">
             <Wallet className="h-4 w-4" />
             <span className="hidden md:inline">Budgets</span>
@@ -74,6 +80,10 @@ const SettingsPage: React.FC = () => {
             <span className="hidden md:inline">Alerts</span>
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="profile" className="space-y-4 animate-fade-in">
+          <UserProfile />
+        </TabsContent>
         
         <TabsContent value="budgets" className="space-y-4 animate-fade-in">
           <BudgetSettings />

@@ -9,10 +9,12 @@ import { TransactionProvider, TransactionType, useTransactions } from '@/context
 import { ThemeProvider } from '@/context/ThemeContext';
 import MobileNav from '@/components/Dashboard/MobileNav';
 import TransactionFilter from '@/components/Dashboard/TransactionFilter';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
 import SettingsPage from '@/components/Settings/SettingsPage';
+import UserProfile from '@/components/Settings/UserProfile';
 import { toast } from 'sonner';
-import { BarChart3, LayoutDashboard, Settings } from 'lucide-react';
+import { BarChart3, LayoutDashboard, Settings, User } from 'lucide-react';
+import AppSidebar from '@/components/AppSidebar';
 
 const IndexContent: React.FC = () => {
   const [isAddTransactionModalOpen, setIsAddTransactionModalOpen] = useState(false);
@@ -58,73 +60,69 @@ const IndexContent: React.FC = () => {
     setFilteredTransactions(transactions);
   };
 
+  const openAddTransactionModal = () => {
+    setTransactionToEdit(undefined);
+    setIsAddTransactionModalOpen(true);
+  };
+
   return (
-    <div className="min-h-screen flex flex-col pb-16 sm:pb-0">
-      <Header openAddTransactionModal={() => {
-        setTransactionToEdit(undefined);
-        setIsAddTransactionModalOpen(true);
-      }} />
+    <div className="min-h-screen flex flex-col">
+      <Header openAddTransactionModal={openAddTransactionModal} />
       
-      <main className="flex-1 container mx-auto px-4 py-6">
-        <Tabs defaultValue="dashboard" value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="hidden sm:flex sm:justify-start mb-6 bg-background/90 backdrop-blur-sm p-1 rounded-lg border">
-            <TabsTrigger value="dashboard" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <LayoutDashboard className="h-4 w-4" />
-              Dashboard
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <BarChart3 className="h-4 w-4" />
-              Analytics
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <Settings className="h-4 w-4" />
-              Settings
-            </TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="dashboard" className="animate-fade-in">
-            <SummaryCards />
-            
-            <TransactionFilter onFilterChange={handleFilterChange} />
-            
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2">
-                <TransactionList onEditTransaction={handleEditTransaction} />
-              </div>
-              <div className="hidden lg:block">
-                <ExpenseChart />
-              </div>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="analytics" className="animate-fade-in">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <ExpenseChart />
+      <div className="flex flex-1">
+        <AppSidebar 
+          openAddTransactionModal={openAddTransactionModal} 
+          activeTab={activeTab} 
+          setActiveTab={setActiveTab}
+        />
+        
+        <main className="flex-1 container mx-auto px-4 py-6 md:pl-20">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsContent value="dashboard" className="animate-fade-in">
+              <SummaryCards />
               
-              <div className="glass-card p-6 rounded-lg shadow-sm">
-                <h2 className="text-xl font-semibold mb-4">Analytics</h2>
-                <p className="text-muted-foreground">
-                  Advanced analytics features coming soon! This will include income vs. expense trends, 
-                  monthly comparisons, and budget tracking.
-                </p>
+              <TransactionFilter onFilterChange={handleFilterChange} />
+              
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2">
+                  <TransactionList onEditTransaction={handleEditTransaction} />
+                </div>
+                <div className="hidden lg:block">
+                  <ExpenseChart />
+                </div>
               </div>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="settings" className="animate-fade-in">
-            <SettingsPage />
-          </TabsContent>
-        </Tabs>
-      </main>
-      
-      <MobileNav 
-        activeTab={activeTab} 
-        setActiveTab={setActiveTab} 
-        openAddTransactionModal={() => {
-          setTransactionToEdit(undefined);
-          setIsAddTransactionModalOpen(true);
-        }} 
-      />
+            </TabsContent>
+            
+            <TabsContent value="analytics" className="animate-fade-in">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <ExpenseChart />
+                
+                <div className="glass-card p-6 rounded-lg shadow-sm">
+                  <h2 className="text-xl font-semibold mb-4">Analytics</h2>
+                  <p className="text-muted-foreground">
+                    Advanced analytics features coming soon! This will include income vs. expense trends, 
+                    monthly comparisons, and budget tracking.
+                  </p>
+                </div>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="settings" className="animate-fade-in">
+              <SettingsPage />
+            </TabsContent>
+            
+            <TabsContent value="profile" className="animate-fade-in">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                <div>
+                  <h1 className="text-3xl font-bold">User Profile</h1>
+                  <p className="text-muted-foreground">Manage your account and preferences</p>
+                </div>
+              </div>
+              <UserProfile />
+            </TabsContent>
+          </Tabs>
+        </main>
+      </div>
       
       <AddTransactionModal 
         isOpen={isAddTransactionModalOpen} 

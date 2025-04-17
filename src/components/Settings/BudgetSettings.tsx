@@ -55,7 +55,7 @@ const BudgetSettings: React.FC = () => {
   const form = useForm<BudgetFormValues>({
     resolver: zodResolver(budgetFormSchema),
     defaultValues: {
-      categoryId: "",
+      categoryId: "overall",
       amount: 0,
       period: "monthly",
       startDate: new Date().toISOString().substring(0, 10),
@@ -89,7 +89,7 @@ const BudgetSettings: React.FC = () => {
     
     // Reset form
     form.reset({
-      categoryId: "",
+      categoryId: "overall",
       amount: 0,
       period: "monthly",
       startDate: new Date().toISOString().substring(0, 10),
@@ -103,7 +103,7 @@ const BudgetSettings: React.FC = () => {
     setEditingBudget(budget);
     
     form.reset({
-      categoryId: budget.categoryId,
+      categoryId: budget.categoryId || "overall",
       amount: budget.amount,
       period: budget.period,
       startDate: new Date(budget.startDate).toISOString().substring(0, 10),
@@ -115,7 +115,7 @@ const BudgetSettings: React.FC = () => {
   const handleCancelEdit = () => {
     setEditingBudget(null);
     form.reset({
-      categoryId: "",
+      categoryId: "overall",
       amount: 0,
       period: "monthly",
       startDate: new Date().toISOString().substring(0, 10),
@@ -174,7 +174,7 @@ const BudgetSettings: React.FC = () => {
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="overall">Overall Budget</SelectItem>
-                        {categories
+                        {categories && categories
                           .filter(category => category.id !== '8') // Filter out Income category
                           .map((category) => (
                             <SelectItem key={category.id} value={category.id}>
@@ -375,7 +375,7 @@ const BudgetSettings: React.FC = () => {
             className="w-full"
             onClick={() => {
               form.reset({
-                categoryId: "",
+                categoryId: "overall",
                 amount: 0,
                 period: "monthly",
                 startDate: new Date().toISOString().substring(0, 10)

@@ -11,8 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { format } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, Repeat } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Switch } from '@/components/ui/switch';
 
 interface AddTransactionModalProps {
   isOpen: boolean;
@@ -32,6 +33,9 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const [notes, setNotes] = useState<string>('');
   const [date, setDate] = useState<Date>(new Date());
   const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [isRecurring, setIsRecurring] = useState<boolean>(false);
+  const [recurringPeriod, setRecurringPeriod] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly');
+  const [nextOccurrence, setNextOccurrence] = useState<Date>(new Date());
 
   // Reset form when the modal opens or closes
   useEffect(() => {
@@ -43,6 +47,9 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         setSelectedCategory(transactionToEdit.category);
         setNotes(transactionToEdit.notes);
         setDate(new Date(transactionToEdit.date));
+        setIsRecurring(transactionToEdit.isRecurring || false);
+        setRecurringPeriod(transactionToEdit.recurringPeriod || 'monthly');
+        setNextOccurrence(transactionToEdit.nextOccurrence ? new Date(transactionToEdit.nextOccurrence) : new Date());
       } else {
         resetForm();
       }
@@ -56,6 +63,13 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     setSelectedCategory('');
     setNotes('');
     setDate(new Date());
+    setIsRecurring(false);
+    setRecurringPeriod('monthly');
+    
+    // Set next occurrence to one month from now by default
+    const nextMonth = new Date();
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    setNextOccurrence(nextMonth);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -72,6 +86,9 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       category: selectedCategory,
       notes,
       date: date.toISOString(),
+      isRecurring,
+      recurringPeriod,
+      nextOccurrence: isRecurring ? nextOccurrence.toISOString() : undefined,
     };
 
     if (isEditing && transactionToEdit) {
@@ -90,6 +107,29 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const handleClose = () => {
     resetForm();
     onClose();
+  };
+
+  // Calculate next occurrence date based on recurring period
+  const updateNextOccurrence = (period: 'daily' | 'weekly' | 'monthly' | 'yearly') => {
+    const next = new Date(date);
+    
+    switch (period) {
+      case 'daily':
+        next.setDate(next.getDate() + 1);
+        break;
+      case 'weekly':
+        next.setDate(next.getDate() + 7);
+        break;
+      case 'monthly':
+        next.setMonth(next.getMonth() + 1);
+        break;
+      case 'yearly':
+        next.setFullYear(next.getFullYear() + 1);
+        break;
+    }
+    
+    setNextOccurrence(next);
+    setRecurringPeriod(period);
   };
 
   return (
@@ -137,7 +177,7 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                       <SelectValue placeholder="Select a category" />
                     </SelectTrigger>
                     <SelectContent>
-                      {categories
+                      {categories && categories
                         .filter((cat) => cat.name !== 'Income')
                         .map((category) => (
                           <SelectItem key={category.id} value={category.id}>
@@ -181,6 +221,67 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                   </Popover>
                 </div>
 
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="recurring"
+                    checked={isRecurring}
+                    onCheckedChange={setIsRecurring}
+                  />
+                  <Label htmlFor="recurring" className="flex items-center">
+                    <Repeat className="h-4 w-4 mr-2" />
+                    Make recurring
+                  </Label>
+                </div>
+
+                {isRecurring && (
+                  <div className="space-y-4 pl-6 border-l-2 border-primary/20">
+                    <div>
+                      <Label htmlFor="recurringPeriod">Repeat Every</Label>
+                      <Select 
+                        value={recurringPeriod} 
+                        onValueChange={(value: any) => updateNextOccurrence(value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select frequency" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="daily">Daily</SelectItem>
+                          <SelectItem value="weekly">Weekly</SelectItem>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                          <SelectItem value="yearly">Yearly</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="nextOccurrence">Next Occurrence</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-full justify-start text-left font-normal",
+                              !nextOccurrence && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {nextOccurrence ? format(nextOccurrence, "PPP") : <span>Pick a date</span>}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                          <Calendar
+                            mode="single"
+                            selected={nextOccurrence}
+                            onSelect={(date) => date && setNextOccurrence(date)}
+                            initialFocus
+                            className="pointer-events-auto"
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </div>
+                )}
+
                 <div>
                   <Label htmlFor="notes">Notes</Label>
                   <Textarea
@@ -222,7 +323,7 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                       <SelectValue placeholder="Select a category" />
                     </SelectTrigger>
                     <SelectContent>
-                      {categories.map((category) => (
+                      {categories && categories.map((category) => (
                         <SelectItem key={category.id} value={category.id}>
                           <div className="flex items-center">
                             <div 
@@ -263,6 +364,67 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                     </PopoverContent>
                   </Popover>
                 </div>
+
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="recurring-income"
+                    checked={isRecurring}
+                    onCheckedChange={setIsRecurring}
+                  />
+                  <Label htmlFor="recurring-income" className="flex items-center">
+                    <Repeat className="h-4 w-4 mr-2" />
+                    Make recurring
+                  </Label>
+                </div>
+
+                {isRecurring && (
+                  <div className="space-y-4 pl-6 border-l-2 border-primary/20">
+                    <div>
+                      <Label htmlFor="recurringPeriod">Repeat Every</Label>
+                      <Select 
+                        value={recurringPeriod} 
+                        onValueChange={(value: any) => updateNextOccurrence(value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select frequency" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="daily">Daily</SelectItem>
+                          <SelectItem value="weekly">Weekly</SelectItem>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                          <SelectItem value="yearly">Yearly</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="nextOccurrence">Next Occurrence</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-full justify-start text-left font-normal",
+                              !nextOccurrence && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {nextOccurrence ? format(nextOccurrence, "PPP") : <span>Pick a date</span>}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                          <Calendar
+                            mode="single"
+                            selected={nextOccurrence}
+                            onSelect={(date) => date && setNextOccurrence(date)}
+                            initialFocus
+                            className="pointer-events-auto"
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <Label htmlFor="notes">Notes</Label>

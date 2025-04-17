@@ -41,8 +41,8 @@ type BudgetFormValues = z.infer<typeof budgetFormSchema>;
 
 const BudgetSettings: React.FC = () => {
   const { 
-    categories, 
-    budgets, 
+    categories = [], 
+    budgets = [], 
     addBudget, 
     editBudget, 
     deleteBudget, 
@@ -303,7 +303,7 @@ const BudgetSettings: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {budgets.length === 0 ? (
+            {!budgets || budgets.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 No budgets set. Create your first budget above.
               </div>

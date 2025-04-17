@@ -24,7 +24,7 @@ import { Download, FileText, FileSpreadsheet, Trash } from 'lucide-react';
 import { toast } from "sonner";
 
 const ReportsExport: React.FC = () => {
-  const { generateReport, reports, deleteReport } = useTransactions();
+  const { generateReport, reports = [], deleteReport } = useTransactions();
   const [reportPeriod, setReportPeriod] = useState<'weekly' | 'monthly' | 'yearly'>('monthly');
   const [reportFormat, setReportFormat] = useState<'csv' | 'pdf'>('csv');
 
@@ -107,7 +107,7 @@ const ReportsExport: React.FC = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {reports.length === 0 ? (
+          {!reports || reports.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               No reports have been generated yet. Create your first report above.
             </div>

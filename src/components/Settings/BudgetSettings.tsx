@@ -2,393 +2,414 @@
 import React, { useState } from 'react';
 import { 
   Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
   CardHeader, 
-  CardTitle 
-} from "@/components/ui/card";
+  CardTitle, 
+  CardDescription, 
+  CardContent 
+} from '@/components/ui/card';
+import { 
+  Dialog, 
+  DialogTrigger, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription, 
+  DialogFooter 
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { 
   Form, 
   FormControl, 
-  FormDescription, 
   FormField, 
   FormItem, 
   FormLabel, 
   FormMessage 
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+} from '@/components/ui/form';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select';
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from '@/components/ui/table';
+import { 
+  Trash2, 
+  Edit, 
+  PlusCircle, 
+  AlertCircle, 
+  BadgeCheck 
+} from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useTransactions, BudgetType } from '@/context/TransactionContext';
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { toast } from "sonner";
-import { AlertTriangle, Plus, Trash2 } from 'lucide-react';
-import { Progress } from "@/components/ui/progress";
+import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
-// Form validation schema
-const budgetFormSchema = z.object({
+const formSchema = z.object({
+  amount: z.coerce.number().positive('Amount must be greater than zero'),
+  period: z.enum(['daily', 'weekly', 'monthly', 'yearly']),
   categoryId: z.string(),
-  amount: z.coerce.number().positive("Amount must be positive"),
-  period: z.enum(["daily", "weekly", "monthly", "yearly"]),
   startDate: z.string(),
   endDate: z.string().optional(),
 });
 
-type BudgetFormValues = z.infer<typeof budgetFormSchema>;
-
 const BudgetSettings: React.FC = () => {
-  const { 
-    categories = [], 
-    budgets = [], 
-    addBudget, 
-    editBudget, 
-    deleteBudget, 
-    getBudgetStatus 
-  } = useTransactions();
+  const { budgets, categories, addBudget, editBudget, deleteBudget, getBudgetStatus } = useTransactions();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [activeBudget, setActiveBudget] = useState<BudgetType | null>(null);
   
-  const [editingBudget, setEditingBudget] = useState<BudgetType | null>(null);
-  
-  // Initialize form with react-hook-form
-  const form = useForm<BudgetFormValues>({
-    resolver: zodResolver(budgetFormSchema),
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
-      categoryId: "overall",
       amount: 0,
-      period: "monthly",
-      startDate: new Date().toISOString().substring(0, 10),
+      period: 'monthly',
+      categoryId: '',
+      startDate: new Date().toISOString().slice(0, 10),
+      endDate: '',
     },
   });
   
-  // Handle form submission
-  const onSubmit = (values: BudgetFormValues) => {
-    if (editingBudget) {
-      // Update existing budget
-      editBudget({
-        ...editingBudget,
-        categoryId: values.categoryId,
-        amount: values.amount,
-        period: values.period,
-        startDate: new Date(values.startDate).toISOString(),
-        endDate: values.endDate ? new Date(values.endDate).toISOString() : undefined
-      });
-      toast.success("Budget updated successfully");
-    } else {
-      // Add new budget
-      addBudget({
-        categoryId: values.categoryId,
-        amount: values.amount,
-        period: values.period,
-        startDate: new Date(values.startDate).toISOString(),
-        endDate: values.endDate ? new Date(values.endDate).toISOString() : undefined
-      });
-      toast.success("Budget added successfully");
-    }
-    
-    // Reset form
-    form.reset({
-      categoryId: "overall",
-      amount: 0,
-      period: "monthly",
-      startDate: new Date().toISOString().substring(0, 10),
-      endDate: undefined
-    });
-    setEditingBudget(null);
+  const resetAndCloseDialog = () => {
+    form.reset();
+    setActiveBudget(null);
+    setIsDialogOpen(false);
   };
   
-  // Start editing a budget
+  const onSubmit = (values: z.infer<typeof formSchema>) => {
+    try {
+      if (activeBudget) {
+        // Edit existing budget
+        editBudget({
+          ...activeBudget,
+          amount: values.amount,
+          period: values.period as any,
+          categoryId: values.categoryId,
+          startDate: new Date(values.startDate).toISOString(),
+          endDate: values.endDate ? new Date(values.endDate).toISOString() : undefined,
+        });
+        toast.success('Budget updated successfully');
+      } else {
+        // Add new budget
+        addBudget({
+          amount: values.amount,
+          period: values.period as any,
+          categoryId: values.categoryId,
+          startDate: new Date(values.startDate).toISOString(),
+          endDate: values.endDate ? new Date(values.endDate).toISOString() : undefined,
+        });
+        toast.success('Budget created successfully');
+      }
+      resetAndCloseDialog();
+    } catch (error) {
+      toast.error('Failed to save budget');
+      console.error(error);
+    }
+  };
+  
   const handleEditBudget = (budget: BudgetType) => {
-    setEditingBudget(budget);
-    
+    setActiveBudget(budget);
     form.reset({
-      categoryId: budget.categoryId || "overall",
       amount: budget.amount,
       period: budget.period,
-      startDate: new Date(budget.startDate).toISOString().substring(0, 10),
-      endDate: budget.endDate ? new Date(budget.endDate).toISOString().substring(0, 10) : undefined
+      categoryId: budget.categoryId,
+      startDate: new Date(budget.startDate).toISOString().slice(0, 10),
+      endDate: budget.endDate ? new Date(budget.endDate).toISOString().slice(0, 10) : undefined,
     });
+    setIsDialogOpen(true);
   };
   
-  // Cancel editing
-  const handleCancelEdit = () => {
-    setEditingBudget(null);
-    form.reset({
-      categoryId: "overall",
-      amount: 0,
-      period: "monthly",
-      startDate: new Date().toISOString().substring(0, 10),
-      endDate: undefined
-    });
-  };
-  
-  // Delete a budget
   const handleDeleteBudget = (id: string) => {
-    deleteBudget(id);
-    toast.success("Budget deleted successfully");
-    if (editingBudget && editingBudget.id === id) {
-      handleCancelEdit();
+    if (confirm('Are you sure you want to delete this budget?')) {
+      deleteBudget(id);
+      toast.success('Budget deleted successfully');
     }
   };
   
-  // Get category name from ID
-  const getCategoryName = (id: string) => {
-    if (!id) return "Overall Budget";
-    const category = categories.find(c => c.id === id);
-    return category ? category.name : "Unknown Category";
-  };
-  
-  // Format budget period for display
-  const formatPeriod = (period: string) => {
-    return period.charAt(0).toUpperCase() + period.slice(1);
+  const renderBudgetStatus = (budget: BudgetType) => {
+    const { spent, remaining, percentage } = getBudgetStatus(budget.id);
+    
+    let statusColor = "bg-green-500";
+    if (percentage > 80 && percentage < 100) {
+      statusColor = "bg-yellow-500";
+    } else if (percentage >= 100) {
+      statusColor = "bg-red-500";
+    }
+    
+    return (
+      <div className="space-y-1">
+        <div className="flex justify-between text-xs">
+          <span>Used: ${spent.toFixed(2)}</span>
+          <span>{percentage.toFixed(1)}%</span>
+        </div>
+        <Progress value={percentage} className={statusColor} />
+        <div className="flex justify-between text-xs">
+          <span>Remaining: ${remaining.toFixed(2)}</span>
+          <span>Budget: ${budget.amount.toFixed(2)}</span>
+        </div>
+      </div>
+    );
   };
   
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl font-bold">Budget Management</CardTitle>
-          <CardDescription>
-            Set and manage your spending budgets by category or overall
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="categoryId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Category</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
-                      defaultValue={field.value}
-                      value={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a category" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="overall">Overall Budget</SelectItem>
-                        {categories && categories
-                          .filter(category => category.id !== '8') // Filter out Income category
-                          .map((category) => (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <div>
+          <CardTitle>Budget Management</CardTitle>
+          <CardDescription>Set and track your spending limits</CardDescription>
+        </div>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button 
+              variant="outline"
+              className="bg-primary/10 hover:bg-primary/20 border-primary/20"
+              onClick={() => {
+                setActiveBudget(null);
+                form.reset({
+                  amount: 0,
+                  period: 'monthly',
+                  categoryId: '',
+                  startDate: new Date().toISOString().slice(0, 10),
+                  endDate: '',
+                });
+              }}
+            >
+              <PlusCircle className="mr-2 h-4 w-4 text-primary" />
+              New Budget
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>{activeBudget ? 'Edit Budget' : 'Create New Budget'}</DialogTitle>
+              <DialogDescription>
+                {activeBudget ? 'Update your budget details below.' : 'Set up a new budget to track your spending.'}
+              </DialogDescription>
+            </DialogHeader>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="categoryId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Category</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a category" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="">Total (All Categories)</SelectItem>
+                          {categories.map((category) => (
                             <SelectItem key={category.id} value={category.id}>
-                              {category.name}
+                              <div className="flex items-center">
+                                <div 
+                                  className="w-3 h-3 rounded-full mr-2" 
+                                  style={{ backgroundColor: category.color }}
+                                />
+                                {category.name}
+                              </div>
                             </SelectItem>
-                          ))
-                        }
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>
-                      Select a category or choose overall budget
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="amount"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Budget Amount</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="number" 
-                        placeholder="0.00" 
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="period"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Budget Period</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
-                      defaultValue={field.value}
-                    >
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="amount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Budget Amount</FormLabel>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a period" />
-                        </SelectTrigger>
+                        <div className="relative">
+                          <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">$</span>
+                          <Input {...field} type="number" step="0.01" className="pl-7" />
+                        </div>
                       </FormControl>
-                      <SelectContent>
-                        <SelectItem value="daily">Daily</SelectItem>
-                        <SelectItem value="weekly">Weekly</SelectItem>
-                        <SelectItem value="monthly">Monthly</SelectItem>
-                        <SelectItem value="yearly">Yearly</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="startDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Start Date</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="date" 
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="endDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>End Date (Optional)</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="date" 
-                        {...field}
-                        value={field.value || ""}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Leave empty for recurring budget
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <div className="flex justify-end space-x-2">
-                {editingBudget && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleCancelEdit}
-                  >
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="period"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Period</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select period" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="daily">Daily</SelectItem>
+                          <SelectItem value="weekly">Weekly</SelectItem>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                          <SelectItem value="yearly">Yearly</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="startDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Start Date</FormLabel>
+                        <FormControl>
+                          <Input {...field} type="date" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="endDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>End Date (Optional)</FormLabel>
+                        <FormControl>
+                          <Input {...field} type="date" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <DialogFooter className="pt-4">
+                  <Button type="button" variant="outline" onClick={resetAndCloseDialog}>
                     Cancel
                   </Button>
-                )}
-                <Button type="submit">
-                  {editingBudget ? "Update Budget" : "Add Budget"}
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl font-bold">Current Budgets</CardTitle>
-          <CardDescription>
-            Track your spending against your budgets
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {!budgets || budgets.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                No budgets set. Create your first budget above.
-              </div>
-            ) : (
-              budgets.map((budget) => {
-                const { spent, remaining, percentage } = getBudgetStatus(budget.id);
-                return (
-                  <div key={budget.id} className="border rounded-lg p-4 space-y-2">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <h3 className="font-semibold text-lg">
-                          {getCategoryName(budget.categoryId)}
-                        </h3>
-                        <p className="text-sm text-muted-foreground">
-                          {formatPeriod(budget.period)} Budget: ${budget.amount.toFixed(2)}
-                        </p>
-                      </div>
-                      <div className="flex space-x-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditBudget(budget)}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteBudget(budget.id)}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-sm">
-                        <span>Spent: ${spent.toFixed(2)}</span>
-                        <span>Remaining: ${remaining.toFixed(2)}</span>
-                      </div>
-                      <Progress 
-                        value={percentage > 100 ? 100 : percentage} 
-                        className={`h-2 ${
-                          percentage >= 100 
-                            ? "bg-destructive" 
-                            : percentage >= 80 
-                              ? "bg-amber-500" 
-                              : ""
-                        }`}
-                      />
-                      {percentage >= 80 && (
-                        <div className="flex items-center text-xs mt-1 text-amber-500">
-                          <AlertTriangle className="h-3 w-3 mr-1" />
-                          {percentage >= 100 
-                            ? "Budget exceeded!" 
-                            : `${percentage.toFixed(0)}% of budget used`}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })
-            )}
+                  <Button type="submit">
+                    {activeBudget ? 'Update Budget' : 'Create Budget'}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
+      </CardHeader>
+      <CardContent>
+        {budgets.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-8 text-center bg-muted/20 rounded-lg border border-dashed">
+            <AlertCircle className="h-10 w-10 text-muted-foreground mb-3" />
+            <h3 className="font-medium text-muted-foreground">No budgets found</h3>
+            <p className="text-sm text-muted-foreground mt-1 mb-4 max-w-xs">
+              Create your first budget to start tracking your spending limits
+            </p>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsDialogOpen(true)}
+              className="mt-2"
+            >
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Create Budget
+            </Button>
           </div>
-        </CardContent>
-        <CardFooter>
-          <Button 
-            variant="outline" 
-            className="w-full"
-            onClick={() => {
-              form.reset({
-                categoryId: "overall",
-                amount: 0,
-                period: "monthly",
-                startDate: new Date().toISOString().substring(0, 10)
-              });
-              setEditingBudget(null);
-            }}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add New Budget
-          </Button>
-        </CardFooter>
-      </Card>
-    </div>
+        ) : (
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Period</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="w-[100px]">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {budgets.map((budget) => {
+                  const { percentage } = getBudgetStatus(budget.id);
+                  const categoryName = budget.categoryId 
+                    ? categories.find(c => c.id === budget.categoryId)?.name 
+                    : 'All Categories';
+                    
+                  return (
+                    <TableRow key={budget.id}>
+                      <TableCell>
+                        <div className="flex items-center">
+                          {budget.categoryId ? (
+                            <div 
+                              className="w-3 h-3 rounded-full mr-2" 
+                              style={{ 
+                                backgroundColor: categories.find(c => c.id === budget.categoryId)?.color || '#888' 
+                              }}
+                            />
+                          ) : (
+                            <BadgeCheck className="w-3 h-3 mr-2 text-primary" />
+                          )}
+                          {categoryName}
+                        </div>
+                      </TableCell>
+                      <TableCell className="capitalize">
+                        {budget.period}
+                      </TableCell>
+                      <TableCell>${budget.amount.toFixed(2)}</TableCell>
+                      <TableCell>
+                        <div className={cn(
+                          "px-2 py-1 rounded-full text-xs inline-flex items-center",
+                          percentage > 100 
+                            ? "bg-red-100 text-red-800" 
+                            : percentage > 80 
+                              ? "bg-yellow-100 text-yellow-800" 
+                              : "bg-green-100 text-green-800"
+                        )}>
+                          {percentage > 100 
+                            ? "Exceeded" 
+                            : percentage > 80 
+                              ? "Warning" 
+                              : "On Track"}
+                        </div>
+                        {renderBudgetStatus(budget)}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex space-x-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEditBudget(budget)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-destructive hover:text-destructive/80"
+                            onClick={() => handleDeleteBudget(budget.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
@@ -9,8 +10,7 @@ import {
   PlusCircle,
   UserCircle,
   LogOut,
-  CreditCard,
-  Home
+  CreditCard
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -89,24 +89,21 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  tooltip="Home"
-                  isActive={location.pathname === '/'}
-                  onClick={() => navigate('/')}
-                >
-                  <Home size={20} />
-                  <span>Home</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              
               {menuItems.map(item => (
                 <SidebarMenuItem key={item.value}>
                   <SidebarMenuButton
                     tooltip={item.name}
                     isActive={activeTab === item.value}
                     onClick={() => setActiveTab(item.value)}
+                    className={cn(
+                      "relative",
+                      activeTab === item.value && "font-medium bg-primary-foreground"
+                    )}
                   >
+                    <div className={cn(
+                      "absolute left-0 top-0 h-full w-1 rounded-r-md",
+                      activeTab === item.value ? "bg-primary" : "bg-transparent"
+                    )} />
                     {item.icon}
                     <span>{item.name}</span>
                   </SidebarMenuButton>
@@ -124,8 +121,9 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
                 <SidebarMenuButton
                   tooltip="Add Transaction"
                   onClick={openAddTransactionModal}
+                  className="bg-primary/10 hover:bg-primary/20 transition-colors"
                 >
-                  <PlusCircle size={20} />
+                  <PlusCircle size={20} className="text-primary" />
                   <span>Add Transaction</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -138,7 +136,7 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
         <div className="p-4 border-t">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
-              <Avatar className="h-9 w-9">
+              <Avatar className="h-9 w-9 border-2 border-primary/20">
                 <AvatarImage src="/placeholder.svg" />
                 <AvatarFallback>US</AvatarFallback>
               </Avatar>
@@ -153,6 +151,7 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
               variant="ghost" 
               size="icon"
               onClick={handleLogout}
+              className="hover:bg-destructive/10 hover:text-destructive transition-colors"
             >
               <LogOut size={18} />
             </Button>

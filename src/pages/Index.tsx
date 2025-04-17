@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { TransactionProvider, TransactionType, useTransactions } from '@/context/TransactionContext';
 import { ThemeProvider } from '@/context/ThemeContext';
@@ -22,7 +21,6 @@ const IndexContent: React.FC = () => {
   
   const { checkBudgetAlerts, processRecurringTransactions } = useTransactions();
 
-  // Check for budget alerts and recurring transactions on component mount and periodically
   useEffect(() => {
     const checkAlerts = () => {
       try {
@@ -35,13 +33,11 @@ const IndexContent: React.FC = () => {
       }
     };
     
-    // Initial check
     checkAlerts();
     processRecurringTransactions();
     
-    // Set up interval checks
-    const alertsInterval = setInterval(checkAlerts, 3600000); // Check every hour
-    const recurringInterval = setInterval(processRecurringTransactions, 86400000); // Check every day
+    const alertsInterval = setInterval(checkAlerts, 3600000);
+    const recurringInterval = setInterval(processRecurringTransactions, 86400000);
     
     return () => {
       clearInterval(alertsInterval);
@@ -118,9 +114,6 @@ const IndexContent: React.FC = () => {
     </SidebarProvider>
   );
 };
-
-// Add a missing import at the top
-import { useState } from 'react';
 
 const Index = () => (
   <ThemeProvider>

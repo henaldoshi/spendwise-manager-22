@@ -25,9 +25,13 @@ const IndexContent: React.FC = () => {
   // Check for budget alerts and recurring transactions on component mount and periodically
   useEffect(() => {
     const checkAlerts = () => {
-      const { messages } = checkBudgetAlerts();
-      if (messages.length > 0) {
-        messages.forEach(message => toast.warning(message));
+      try {
+        const { messages } = checkBudgetAlerts();
+        if (messages && messages.length > 0) {
+          messages.forEach(message => toast.warning(message));
+        }
+      } catch (error) {
+        console.error("Error checking budget alerts:", error);
       }
     };
     
@@ -43,7 +47,7 @@ const IndexContent: React.FC = () => {
       clearInterval(alertsInterval);
       clearInterval(recurringInterval);
     };
-  }, []);
+  }, [checkBudgetAlerts, processRecurringTransactions]);
 
   const handleEditTransaction = (transaction: TransactionType) => {
     setTransactionToEdit(transaction);

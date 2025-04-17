@@ -12,12 +12,12 @@ import { Bell, Wallet, Tag, Repeat, FileText, Paintbrush } from 'lucide-react';
 
 const SettingsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('budgets');
-  const { budgets, transactions } = useTransactions();
+  const { budgets = [], transactions = [] } = useTransactions();
   
-  // Count recurring transactions
+  // Count recurring transactions - add null check
   const recurringCount = transactions.filter(t => t.isRecurring).length;
   
-  // Check if any budget is over 80% used
+  // Check if any budget is over 80% used - add null check
   const budgetAlerts = budgets.filter(budget => {
     const percentage = budget.spent / budget.amount * 100;
     return percentage >= 80;

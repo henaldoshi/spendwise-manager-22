@@ -26,7 +26,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 
 const RecurringTransactions: React.FC = () => {
-  const { transactions, categories, editTransaction, deleteTransaction } = useTransactions();
+  const { transactions = [], categories = [], editTransaction, deleteTransaction } = useTransactions();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<TransactionType | null>(null);
   const [amount, setAmount] = useState('');
@@ -35,7 +35,7 @@ const RecurringTransactions: React.FC = () => {
   const [recurringPeriod, setRecurringPeriod] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly');
   const [nextOccurrence, setNextOccurrence] = useState('');
 
-  // Filter recurring transactions
+  // Filter recurring transactions - safer with the default value above
   const recurringTransactions = transactions.filter(t => t.isRecurring);
 
   const handleEditClick = (transaction: TransactionType) => {

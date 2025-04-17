@@ -173,7 +173,7 @@ const BudgetSettings: React.FC = () => {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">Overall Budget</SelectItem>
+                        <SelectItem value="overall">Overall Budget</SelectItem>
                         {categories
                           .filter(category => category.id !== '8') // Filter out Income category
                           .map((category) => (
@@ -185,7 +185,7 @@ const BudgetSettings: React.FC = () => {
                       </SelectContent>
                     </Select>
                     <FormDescription>
-                      Select a category or leave empty for overall budget
+                      Select a category or choose overall budget
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

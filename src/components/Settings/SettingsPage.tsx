@@ -14,14 +14,14 @@ const SettingsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('budgets');
   const { budgets = [], transactions = [] } = useTransactions();
   
-  // Count recurring transactions - add null check
-  const recurringCount = transactions.filter(t => t.isRecurring).length;
+  // Count recurring transactions with null check
+  const recurringCount = transactions ? transactions.filter(t => t.isRecurring).length : 0;
   
-  // Check if any budget is over 80% used - add null check
-  const budgetAlerts = budgets.filter(budget => {
+  // Check if any budget is over 80% used with null check
+  const budgetAlerts = budgets ? budgets.filter(budget => {
     const percentage = budget.spent / budget.amount * 100;
     return percentage >= 80;
-  }).length;
+  }).length : 0;
 
   return (
     <div className="space-y-4">

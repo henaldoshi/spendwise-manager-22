@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useReducer, useEffect, useState } from 'react';
 import { toast } from "sonner";
 
@@ -170,7 +171,7 @@ const initialState: TransactionState = {
   transactions: initialDefaultTransactions,
   categories: initialDefaultCategories,
   budgets: initialDefaultBudgets,
-  reports: [],
+  reports: [], // Ensure reports is initialized as an empty array
 };
 
 // Reducer for state management
@@ -230,15 +231,19 @@ const transactionReducer = (state: TransactionState, action: TransactionAction):
     case 'ADD_REPORT':
       return {
         ...state,
-        reports: [...state.reports, action.payload],
+        reports: Array.isArray(state.reports) ? [...state.reports, action.payload] : [action.payload],
       };
     case 'DELETE_REPORT':
       return {
         ...state,
-        reports: state.reports.filter(r => r.id !== action.payload),
+        reports: Array.isArray(state.reports) ? state.reports.filter(r => r.id !== action.payload) : [],
       };
     case 'SET_INITIAL_DATA':
-      return action.payload;
+      // Make sure reports is always an array
+      return {
+        ...action.payload,
+        reports: Array.isArray(action.payload.reports) ? action.payload.reports : [],
+      };
     default:
       return state;
   }
@@ -318,6 +323,11 @@ export const TransactionProvider: React.FC<{ children: React.ReactNode }> = ({ c
       try {
         const parsedData = JSON.parse(storedData);
         
+        // Ensure reports is an array
+        if (!Array.isArray(parsedData.reports)) {
+          parsedData.reports = [];
+        }
+        
         // Ensure budgets have spent and remaining calculated
         if (parsedData.budgets) {
           parsedData.budgets = calculateBudgets(parsedData.budgets, parsedData.transactions);
@@ -326,6 +336,8 @@ export const TransactionProvider: React.FC<{ children: React.ReactNode }> = ({ c
         dispatch({ type: 'SET_INITIAL_DATA', payload: parsedData });
       } catch (error) {
         console.error('Failed to parse stored data:', error);
+        // Initialize with default state if parsing fails
+        dispatch({ type: 'SET_INITIAL_DATA', payload: initialState });
       }
     }
     setIsLoading(false);
@@ -698,7 +710,10 @@ export const TransactionProvider: React.FC<{ children: React.ReactNode }> = ({ c
   };
 
   const value = {
-    ...state,
+    transactions: state.transactions,
+    categories: state.categories,
+    budgets: state.budgets,
+    reports: Array.isArray(state.reports) ? state.reports : [], // Ensure reports is always an array
     addTransaction,
     editTransaction,
     deleteTransaction,
